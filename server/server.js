@@ -36,6 +36,19 @@ mongoose
   .then(() => {
     console.log("✅ MongoDB connected successfully");
     console.log("📊 Database:", mongoose.connection.name);
+
+    // Test collections
+    console.log("📋 Testing collections...");
+    mongoose.connection.db
+      .listCollections()
+      .toArray()
+      .then((collections) => {
+        console.log(
+          "📂 Available collections:",
+          collections.map((c) => c.name)
+        );
+      })
+      .catch((err) => console.log("⚠️ Collection test failed:", err.message));
   })
   .catch((err) => {
     console.error("❌ MongoDB connection error:", err);
@@ -45,6 +58,7 @@ mongoose
 // Routes
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/vehicles", require("./routes/vehicles"));
+app.use("/api/bookings", require("./routes/bookings"));
 
 // Health check route
 app.get("/api/health", (req, res) => {
@@ -89,6 +103,7 @@ app.get("/api/status", (req, res) => {
     routes: {
       auth: "/api/auth",
       vehicles: "/api/vehicles",
+      bookings: "/api/bookings",
       health: "/api/health",
       test: "/api/test",
       status: "/api/status",
@@ -101,9 +116,11 @@ app.get("/api/stats", async (req, res) => {
   try {
     const User = require("./models/User");
     const Vehicle = require("./models/Vehicle");
+    const Booking = require("./models/Booking");
 
     const userCount = await User.countDocuments();
     const vehicleCount = await Vehicle.countDocuments();
+    const bookingCount = await Booking.countDocuments();
     const activeVehicles = await Vehicle.countDocuments({
       "availability.isActive": true,
       "availability.isAvailable": true,
@@ -123,6 +140,9 @@ app.get("/api/stats", async (req, res) => {
           total: vehicleCount,
           active: activeVehicles,
           inactive: vehicleCount - activeVehicles,
+        },
+        bookings: {
+          total: bookingCount,
         },
         system: {
           uptime: process.uptime(),
@@ -146,6 +166,7 @@ app.use("*", (req, res) => {
     availableRoutes: {
       auth: "/api/auth",
       vehicles: "/api/vehicles",
+      bookings: "/api/bookings",
       health: "/api/health",
       test: "/api/test",
       status: "/api/status",
@@ -251,6 +272,7 @@ app.listen(PORT, () => {
   console.log("📋 Available API Routes:");
   console.log("   🔐 Auth: /api/auth/*");
   console.log("   🚗 Vehicles: /api/vehicles/*");
+  console.log("   📅 Bookings: /api/bookings/*");
   console.log("   ⚡ Health: /api/health");
   console.log("   🧪 Test: /api/test");
   console.log("   📈 Status: /api/status");

@@ -59,7 +59,7 @@ router.post("/sync-user", async (req, res) => {
       firebaseUid,
       email,
       name,
-      phone: phone || "", // Default to empty string if not provided
+      phone: phone || "",
       role: role || "user",
       authProvider: authProvider || (phone ? "email" : "google"),
       profileComplete: !!(phone && phone !== ""),

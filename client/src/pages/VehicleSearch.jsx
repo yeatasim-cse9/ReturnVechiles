@@ -10,12 +10,15 @@ import {
   Ambulance,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import BookingForm from "../components/booking/BookingForm";
 import toast from "react-hot-toast";
 
 const VehicleSearch = () => {
   const { user, dbUser } = useAuth();
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [filters, setFilters] = useState({
     type: "",
     city: "",
@@ -277,7 +280,13 @@ const VehicleSearch = () => {
             </div>
           </div>
 
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+          <button
+            onClick={() => {
+              setSelectedVehicle(vehicle);
+              setShowBookingModal(true);
+            }}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
             Book Now
           </button>
         </div>
@@ -554,6 +563,21 @@ const VehicleSearch = () => {
           </>
         )}
       </div>
+
+      {/* Booking Modal */}
+      {showBookingModal && selectedVehicle && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="max-w-4xl w-full max-h-screen overflow-y-auto">
+            <BookingForm
+              vehicle={selectedVehicle}
+              onClose={() => {
+                setShowBookingModal(false);
+                setSelectedVehicle(null);
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -54,11 +54,28 @@ const Navbar = () => {
                 </Link>
 
                 {dbUser?.role === "driver" && (
+                  <>
+                    <Link
+                      to="/my-vehicles"
+                      className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                    >
+                      My Vehicles
+                    </Link>
+                    <Link
+                      to="/add-vehicle"
+                      className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                    >
+                      Add Vehicle
+                    </Link>
+                  </>
+                )}
+
+                {dbUser?.role === "user" && (
                   <Link
-                    to="/driver/vehicles"
+                    to="/my-bookings"
                     className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
                   >
-                    My Vehicles
+                    My Bookings
                   </Link>
                 )}
 
@@ -178,22 +195,44 @@ const Navbar = () => {
                   <Link
                     to="/dashboard"
                     className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md"
+                    onClick={() => setIsOpen(false)}
                   >
                     Dashboard
                   </Link>
                   <Link
                     to="/search"
                     className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md"
+                    onClick={() => setIsOpen(false)}
                   >
                     Search Vehicles
                   </Link>
 
                   {dbUser?.role === "driver" && (
+                    <>
+                      <Link
+                        to="/my-vehicles"
+                        className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        My Vehicles
+                      </Link>
+                      <Link
+                        to="/add-vehicle"
+                        className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        Add Vehicle
+                      </Link>
+                    </>
+                  )}
+
+                  {dbUser?.role === "user" && (
                     <Link
-                      to="/driver/vehicles"
+                      to="/my-bookings"
                       className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md"
+                      onClick={() => setIsOpen(false)}
                     >
-                      My Vehicles
+                      My Bookings
                     </Link>
                   )}
 
@@ -201,13 +240,17 @@ const Navbar = () => {
                     <Link
                       to="/admin"
                       className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md"
+                      onClick={() => setIsOpen(false)}
                     >
                       Admin Panel
                     </Link>
                   )}
 
                   <button
-                    onClick={handleLogout}
+                    onClick={() => {
+                      handleLogout();
+                      setIsOpen(false);
+                    }}
                     className="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md"
                   >
                     Logout
@@ -218,12 +261,14 @@ const Navbar = () => {
                   <Link
                     to="/login"
                     className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md"
+                    onClick={() => setIsOpen(false)}
                   >
                     Login
                   </Link>
                   <Link
                     to="/register"
                     className="block px-3 py-2 text-base font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
+                    onClick={() => setIsOpen(false)}
                   >
                     Sign Up
                   </Link>

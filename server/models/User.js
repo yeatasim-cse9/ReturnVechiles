@@ -20,8 +20,8 @@ const userSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      required: false, // Changed from true to false
-      default: "", // Added default empty string
+      required: false,
+      default: "",
     },
     role: {
       type: String,

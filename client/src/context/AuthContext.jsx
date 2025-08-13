@@ -27,8 +27,20 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState(null);
   const [dbUser, setDbUser] = useState(null);
+  const [isRegistering, setIsRegistering] = useState(false);
 
-  // Sync Firebase user with MongoDB (with better error handling)
+  // Normalize user data to ensure consistent id field
+  const normalizeUserData = (userData) => {
+    if (!userData) return null;
+
+    return {
+      ...userData,
+      id: userData.id || userData._id, // Ensure id field exists
+      _id: userData._id || userData.id, // Keep both for compatibility
+    };
+  };
+
+  // Sync Firebase user with MongoDB (improved version)
   const syncWithBackend = async (
     firebaseUser,
     additionalData = {},
@@ -38,7 +50,7 @@ export const AuthProvider = ({ children }) => {
       const userData = {
         firebaseUid: firebaseUser.uid,
         email: firebaseUser.email,
-        name: firebaseUser.displayName || additionalData.name || "User",
+        name: additionalData.name || firebaseUser.displayName || "User",
         phone: additionalData.phone || "",
         role: additionalData.role || "user",
       };
@@ -46,18 +58,21 @@ export const AuthProvider = ({ children }) => {
       console.log("🔄 Syncing user with backend:", userData);
 
       const response = await authAPI.syncUser(userData);
-      setDbUser(response.user);
-      setUserRole(response.user.role);
+      const normalizedUser = normalizeUserData(response.user);
 
-      console.log("✅ User synced successfully:", response.user);
-      return response.user;
+      setDbUser(normalizedUser);
+      setUserRole(normalizedUser.role);
+
+      console.log("✅ User synced successfully:", normalizedUser);
+      console.log("✅ User ID confirmed:", normalizedUser.id);
+      return normalizedUser;
     } catch (error) {
       console.error("❌ Backend sync error:", error);
 
       // Retry mechanism
       if (retries > 0) {
         console.log(`🔄 Retrying sync... (${retries} attempts left)`);
-        await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2 seconds
+        await new Promise((resolve) => setTimeout(resolve, 2000));
         return await syncWithBackend(firebaseUser, additionalData, retries - 1);
       }
 
@@ -79,10 +94,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Sign up with email and password
+  // Sign up with email and password (FIXED)
   const signup = async (email, password, name, phone = "", role = "user") => {
     try {
       setLoading(true);
+      setIsRegistering(true);
 
       // Create Firebase user
       const result = await createUserWithEmailAndPassword(
@@ -96,7 +112,7 @@ export const AuthProvider = ({ children }) => {
         displayName: name,
       });
 
-      // Sync with MongoDB (with retry)
+      // Sync with MongoDB with proper data
       await syncWithBackend(result.user, { name, phone, role });
 
       toast.success("✅ Account created successfully!");
@@ -114,6 +130,7 @@ export const AuthProvider = ({ children }) => {
       throw error;
     } finally {
       setLoading(false);
+      setIsRegistering(false);
     }
   };
 
@@ -131,7 +148,6 @@ export const AuthProvider = ({ children }) => {
         console.warn(
           "⚠️ Backend sync failed during login, but user is logged in to Firebase"
         );
-        // Continue with login even if sync fails
       }
 
       toast.success("✅ Logged in successfully!");
@@ -152,14 +168,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Sign in with Google (improved error handling)
+  // Sign in with Google (improved)
   const signInWithGoogle = async () => {
     try {
       setLoading(true);
       toast.loading("🔄 Connecting to Google...", { id: "google-signin" });
 
       const provider = new GoogleAuthProvider();
-      // Add scopes for better user info
       provider.addScope("email");
       provider.addScope("profile");
 
@@ -211,32 +226,34 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Monitor auth state changes
+  // Monitor auth state changes (FIXED - no double sync)
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log("🔄 Firebase user state changed:", firebaseUser?.email);
       setUser(firebaseUser);
 
-      if (firebaseUser) {
-        console.log("🔄 Firebase user state changed:", firebaseUser.email);
-
+      if (firebaseUser && !isRegistering) {
         try {
           // Try to get user from backend first
           const backendUser = await authAPI.getUserByUID(firebaseUser.uid);
-          setDbUser(backendUser.user);
-          setUserRole(backendUser.user.role);
-          console.log("✅ Backend user found:", backendUser.user);
+          const normalizedUser = normalizeUserData(backendUser.user);
+
+          setDbUser(normalizedUser);
+          setUserRole(normalizedUser.role);
+
+          console.log("✅ Backend user found:", normalizedUser);
+          console.log("✅ User ID confirmed:", normalizedUser.id);
         } catch (error) {
           console.warn("⚠️ Backend user not found, attempting sync...");
 
           try {
-            // User not in backend, try to sync
+            // User not in backend, try to sync with minimal data
             await syncWithBackend(firebaseUser);
           } catch (syncError) {
             console.error("❌ Auto-sync failed:", syncError);
-            // Don't show error toast on auto-sync failure
           }
         }
-      } else {
+      } else if (!firebaseUser) {
         // User signed out
         setDbUser(null);
         setUserRole(null);
@@ -246,11 +263,11 @@ export const AuthProvider = ({ children }) => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [isRegistering]);
 
   const value = {
     user, // Firebase user
-    dbUser, // MongoDB user data
+    dbUser, // MongoDB user data (normalized with id field)
     userRole,
     setUserRole,
     loading,

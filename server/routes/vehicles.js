@@ -69,12 +69,34 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Get vehicles by driver
+// Get vehicles by driver (IMPROVED ERROR HANDLING)
 router.get("/driver/:driverId", async (req, res) => {
   try {
-    const vehicles = await Vehicle.find({ driver: req.params.driverId }).sort({
-      createdAt: -1,
-    });
+    const { driverId } = req.params;
+
+    // Validate driver ID
+    if (!driverId || driverId === "undefined") {
+      return res.status(400).json({
+        message: "Driver ID is required and cannot be undefined",
+        error: "INVALID_DRIVER_ID",
+      });
+    }
+
+    // Check if it's a valid MongoDB ObjectId
+    if (!driverId.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({
+        message: "Invalid driver ID format",
+        error: "INVALID_OBJECTID_FORMAT",
+      });
+    }
+
+    console.log("🔍 Searching vehicles for driver:", driverId);
+
+    const vehicles = await Vehicle.find({ driver: driverId })
+      .populate("driver", "name email phone rating.average rating.count")
+      .sort({ createdAt: -1 });
+
+    console.log("✅ Found vehicles:", vehicles.length);
 
     res.status(200).json({
       message: "Driver vehicles fetched successfully",
@@ -83,7 +105,11 @@ router.get("/driver/:driverId", async (req, res) => {
     });
   } catch (error) {
     console.error("Get driver vehicles error:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+      driverId: req.params.driverId,
+    });
   }
 });
 

@@ -1,77 +1,68 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { authAPI } from "../services/api";
-import { Car, Truck, Users, CheckCircle } from "lucide-react";
+import { Car, DollarSign, Clock, Shield } from "lucide-react";
 import toast from "react-hot-toast";
 
 const RoleSelection = () => {
   const [selectedRole, setSelectedRole] = useState("");
   const [loading, setLoading] = useState(false);
-  const { user, dbUser, syncWithBackend } = useAuth();
+  const { user, syncWithBackend } = useAuth();
   const navigate = useNavigate();
 
   const roles = [
     {
       id: "user",
       title: "Passenger",
-      description: "Book vehicles for your travel needs",
-      icon: Users,
+      description: "Book vehicles for your transportation needs",
+      icon: "🚗",
+      color: "blue",
       features: [
         "Search and book vehicles",
-        "Track your bookings",
-        "Rate drivers and vehicles",
-        "Secure payment system",
+        "Track your rides",
+        "Rate and review drivers",
+        "Save favorite drivers",
       ],
-      color: "blue",
     },
     {
       id: "driver",
       title: "Driver",
-      description: "Offer your vehicle and earn money",
-      icon: Car,
-      features: [
-        "List your vehicles",
-        "Accept booking requests",
-        "Earn money from trips",
-        "Manage your schedule",
-      ],
+      description: "List your vehicle and start earning money",
+      icon: "👨‍💼",
       color: "green",
+      features: [
+        "List multiple vehicles",
+        "Set your own pricing",
+        "Manage bookings",
+        "Track your earnings",
+      ],
     },
   ];
 
-  const handleRoleSelect = async () => {
+  const handleRoleSelect = (roleId) => {
+    setSelectedRole(roleId);
+  };
+
+  const handleContinue = async () => {
     if (!selectedRole) {
-      toast.error("Please select a role");
+      toast.error("Please select a role to continue");
       return;
     }
 
     try {
       setLoading(true);
 
-      // Update user role in MongoDB
-      const updateData = {
-        firebaseUid: user.uid,
-        email: user.email,
-        name: user.displayName || "User",
-        role: selectedRole,
-      };
-
-      await authAPI.syncUser(updateData);
-
-      // Re-sync with backend to get updated user data
+      // Sync with backend with the selected role
       await syncWithBackend(user, { role: selectedRole });
 
-      toast.success(
-        `Role selected successfully! Welcome ${
-          selectedRole === "driver" ? "Driver" : "Passenger"
-        }!`
-      );
+      toast.success("Role selected successfully!");
 
-      // Navigate to appropriate dashboard
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 1500);
+      // Navigate based on role
+      if (selectedRole === "driver") {
+        navigate("/add-vehicle");
+      } else {
+        navigate("/search");
+      }
     } catch (error) {
       console.error("Role selection error:", error);
       toast.error("Failed to update role. Please try again.");
@@ -80,104 +71,165 @@ const RoleSelection = () => {
     }
   };
 
-  // If user already has a role, redirect to dashboard
-  if (dbUser?.role && dbUser.role !== "user") {
-    navigate("/dashboard");
-    return null;
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-4xl">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Choose Your Role
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="mx-auto h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center mb-6">
+            <Car className="h-8 w-8 text-white" />
+          </div>
+          <h1 className="text-3xl font-extrabold text-gray-900 mb-4">
+            How do you want to use ReturnVehicle?
           </h1>
-          <p className="text-gray-600 text-lg">
-            Welcome {user?.displayName || user?.email}! How would you like to
-            use ReturnVehicle?
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Choose your role to get started with the right features for you
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {roles.map((role) => {
-            const Icon = role.icon;
-            const isSelected = selectedRole === role.id;
-
-            return (
-              <div
-                key={role.id}
-                onClick={() => setSelectedRole(role.id)}
-                className={`relative cursor-pointer p-6 rounded-xl border-2 transition-all duration-200 ${
-                  isSelected
-                    ? `border-${role.color}-500 bg-${role.color}-50 shadow-lg scale-105`
-                    : "border-gray-200 hover:border-gray-300 hover:shadow-md"
-                }`}
-              >
-                {isSelected && (
-                  <div
-                    className={`absolute top-4 right-4 text-${role.color}-500`}
+        {/* Role Selection Cards */}
+        <div className="grid md:grid-cols-2 gap-8 mb-12">
+          {roles.map((role) => (
+            <div
+              key={role.id}
+              onClick={() => handleRoleSelect(role.id)}
+              className={`relative cursor-pointer rounded-2xl p-8 transition-all duration-300 ${
+                selectedRole === role.id
+                  ? `ring-4 ring-${role.color}-500 bg-${role.color}-50 shadow-lg scale-105`
+                  : "bg-white hover:shadow-md border border-gray-200"
+              }`}
+            >
+              {/* Selection Indicator */}
+              {selectedRole === role.id && (
+                <div
+                  className={`absolute -top-2 -right-2 w-8 h-8 bg-${role.color}-500 rounded-full flex items-center justify-center`}
+                >
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
                   >
-                    <CheckCircle className="h-6 w-6" />
-                  </div>
-                )}
-
-                <div className="text-center mb-4">
-                  <div
-                    className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${
-                      isSelected
-                        ? `bg-${role.color}-500 text-white`
-                        : `bg-${role.color}-100 text-${role.color}-600`
-                    }`}
-                  >
-                    <Icon className="h-8 w-8" />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    {role.title}
-                  </h3>
-                  <p className="text-gray-600">{role.description}</p>
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
                 </div>
+              )}
 
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-gray-800 text-sm">
-                    Features include:
-                  </h4>
-                  <ul className="space-y-1">
-                    {role.features.map((feature, index) => (
-                      <li
-                        key={index}
-                        className="flex items-start text-sm text-gray-600"
-                      >
-                        <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
+              {/* Role Icon */}
+              <div className="text-6xl mb-6 text-center">{role.icon}</div>
+
+              {/* Role Info */}
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                  {role.title}
+                </h3>
+                <p className="text-gray-600 text-lg">{role.description}</p>
+              </div>
+
+              {/* Features */}
+              <div className="space-y-3">
+                {role.features.map((feature, index) => (
+                  <div key={index} className="flex items-center">
+                    <div
+                      className={`w-2 h-2 bg-${role.color}-500 rounded-full mr-3`}
+                    ></div>
+                    <span className="text-gray-700">{feature}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Benefits */}
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="flex items-center justify-between text-sm text-gray-600">
+                  {role.id === "user" ? (
+                    <>
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-1" />
+                        Quick booking
+                      </div>
+                      <div className="flex items-center">
+                        <Shield className="h-4 w-4 mr-1" />
+                        Safe rides
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center">
+                        <DollarSign className="h-4 w-4 mr-1" />
+                        Earn money
+                      </div>
+                      <div className="flex items-center">
+                        <Car className="h-4 w-4 mr-1" />
+                        Flexible schedule
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
 
+        {/* Continue Button */}
         <div className="text-center">
           <button
-            onClick={handleRoleSelect}
+            onClick={handleContinue}
             disabled={!selectedRole || loading}
-            className={`px-8 py-3 rounded-lg font-medium transition-colors ${
-              selectedRole && !loading
-                ? "bg-blue-600 hover:bg-blue-700 text-white"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            }`}
+            className="inline-flex items-center px-8 py-4 border border-transparent text-lg font-medium rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
           >
-            {loading
-              ? "Setting up your account..."
-              : "Continue with Selected Role"}
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                Setting up your account...
+              </>
+            ) : (
+              <>
+                Continue as {selectedRole === "user" ? "Passenger" : "Driver"}
+                <svg
+                  className="ml-2 -mr-1 w-5 h-5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </>
+            )}
           </button>
+        </div>
 
-          <p className="text-sm text-gray-500 mt-4">
-            You can change your role later in your profile settings
+        {/* Help Text */}
+        <div className="mt-8 text-center">
+          <p className="text-sm text-gray-500">
+            Don't worry, you can always change your role later in your profile
+            settings
           </p>
         </div>
+
+        {/* User Info */}
+        {user && (
+          <div className="mt-8 bg-white rounded-lg p-4 shadow-sm">
+            <div className="flex items-center justify-center space-x-4">
+              <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                <span className="text-sm font-medium text-gray-600">
+                  {user.displayName?.charAt(0) || user.email?.charAt(0) || "U"}
+                </span>
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-gray-900">
+                  {user.displayName || "User"}
+                </p>
+                <p className="text-xs text-gray-500">{user.email}</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
